@@ -8,12 +8,20 @@ export default {
   theme: {
     extend: {
       colors:{
-        primary_1: "#F15641  ",
-        secondary : "#001C32",
+        primary: "#119da4",
+        secondary: "#0c7489",
+        accent: "#13505b",
+        neutral: "#040404",
+        "base-100": "#f3feff",
+        info: "#001C32",
+        success: "#119da4",
+        warning: "#F15641",
+        error: "#F15641",
       },
       boxShadow: {
-        '3xl': '#F1564175 0px 7px 29px -10px',
-        '4xl':'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px'
+        '3xl': '#119da44c 0px 25px 20px -20px',
+      
+       
       }
     },
   },
