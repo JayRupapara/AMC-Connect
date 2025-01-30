@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import HomePage from './pages/HomePage'
@@ -15,11 +14,21 @@ import AllComplaints from './pages/departmentAdmin/AllComplaints'
 import ComplaintDetails from './pages/departmentAdmin/ComplaintDetails'
 import Notifications from './pages/departmentAdmin/Notifications'
 import DeptAdminLogin from './pages/departmentAdmin/DeptAdminLogin'
+import { Toaster } from 'react-hot-toast'
+import CommissionerLayout from './pages/commissioner/CommissionerLayout'
+import { AuthProvider } from './context/AuthContext'
+import { signOut } from 'firebase/auth'
+import { auth } from './config/firebase'
 
 const App = () => {
+  // useEffect(() => {
+  //   signOut(auth);
+  // }, []);
   return (
+    
     <AuthProvider>
       <Router>
+        <Toaster position='top-right' reverseOrder={false} />
         <div className="text-neutral">
           <Routes>
             {/* Public routes with Navbar */}
@@ -50,12 +59,12 @@ const App = () => {
             <Route
               path="/commissioner/dashboard"
               element={
-                <ProtectedRoute>
-                  <Dashboard />
+                <ProtectedRoute allowedRoles={['commissioner']}>
+                  <CommissionerLayout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="departments" replace />} />
+              <Route index element={<Dashboard />} />
               <Route path="departments" element={<Departments />} />
               <Route path="departments/:id" element={<DepartmentDetails />} />
               <Route path="admins" element={<DepartmentAdmins />} />
@@ -69,7 +78,7 @@ const App = () => {
             } />
             
             <Route path="/department-admin" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['deptAdmin']}>
                 <DeptAdminLayout />
               </ProtectedRoute>
             }>
@@ -78,6 +87,9 @@ const App = () => {
               <Route path="complaints/:id" element={<ComplaintDetails />} />
               <Route path="notifications" element={<Notifications />} />
             </Route>
+
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/commissioner/login" replace />} />
           </Routes>
         </div>
       </Router>

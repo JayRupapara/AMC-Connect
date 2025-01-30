@@ -12,6 +12,7 @@ const DeptAdminLogin = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -23,21 +24,24 @@ const DeptAdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
+
     try {
-      // Add your authentication API call here
-      const userData = {
-        role: 'deptAdmin',
-        email: formData.email,
-        department: 'Water Supply', // This will come from API
-      };
+      const role = await login(formData.email, formData.password);
       
-      login(userData);
-      
-      // Redirect to department admin dashboard specifically
+      if (role !== 'deptAdmin') {
+        throw new Error('Unauthorized access');
+      }
+
+      // Redirect to department admin dashboard
       const from = location.state?.from?.pathname || "/department-admin/dashboard";
       navigate(from, { replace: true });
     } catch (err) {
-      setError('Invalid credentials. Please try again.');
+      console.error('Login error:', err);
+      setError('Invalid credentials or unauthorized access.');
+    } finally {
+      setLoading(false);
     }
   };
 

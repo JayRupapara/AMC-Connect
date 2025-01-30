@@ -4,41 +4,44 @@ import { FaUserShield } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
 const CommissionerLogin = () => {
-    const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
-        setError(''); // Clear error when user starts typing
+        setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
+
         try {
-            // Add your authentication API call here
-            // For now, we'll simulate a successful login
-            const userData = {
-                role: 'commissioner',
-                email: formData.email,
-                // other user data
-            };
+            const role = await login(formData.email, formData.password);
+            console.log(role);
+            if (role === 'commissioner') {
+                navigate('/commissioner/dashboard');
+            }
+            else {
+                setError('Invalid credentials or unauthorized access.');
+            }
 
-            login(userData);
-
-            // Redirect to the page they tried to visit or default to dashboard
-            const from = location.state?.from?.pathname || "/commissioner/dashboard/departments";
-            navigate(from, { replace: true });
         } catch (err) {
-            setError('Invalid credentials. Please try again.');
+            console.error('Login error:', err);
+            setError('Invalid credentials or unauthorized access.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -60,7 +63,7 @@ const CommissionerLogin = () => {
                 </div>
 
                 {/* Form */}
-                <form className="mt-8 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {error && (
                         <div className="bg-error/10 text-error text-sm p-3 rounded-lg">
                             {error}
@@ -137,14 +140,16 @@ const CommissionerLogin = () => {
                     </div>
 
                     {/* Submit Button */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
-                        <button
-                            type="submit"
-                            className="w-full sm:w-auto px-4 py-2 sm:py-3 bg-primary text-base-100 rounded-lg hover:bg-secondary transition-colors duration-200"
-                        >
-                            Sign in
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg
+                          shadow-sm text-sm font-medium text-base-100 bg-primary hover:bg-secondary
+                          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
+                          transition duration-300 disabled:opacity-50"
+                    >
+                        {loading ? 'Signing in...' : 'Sign in'}
+                    </button>
                 </form>
 
                 {/* Contact Support */}

@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export const ProtectedRoute = ({ children }) => {
+export const ProtectedRoute = ({ allowedRoles, children }) => {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -12,6 +12,16 @@ export const ProtectedRoute = ({ children }) => {
       : '/commissioner/login';
     
     return <Navigate to={loginRoute} state={{ from: location }} replace />;
+  }
+
+  // Check if user has required role
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // Redirect to appropriate dashboard based on role
+    const dashboardPath = user.role === 'deptAdmin' 
+      ? '/department-admin/dashboard'
+      : '/commissioner/dashboard/departments';
+    
+    return <Navigate to={dashboardPath} replace />;
   }
 
   return children;
@@ -26,7 +36,7 @@ export const PublicRoute = ({ children }) => {
     const dashboardPath = user.role === 'deptAdmin' 
       ? '/department-admin/dashboard'
       : '/commissioner/dashboard/departments';
-      
+    
     return <Navigate to={dashboardPath} replace />;
   }
 
