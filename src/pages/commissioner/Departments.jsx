@@ -22,7 +22,7 @@ const Departments = () => {
             name: name,
             description: `${data.subcategories.length} subcategories`,
             subcategories: data.subcategories,
-            status: 'Active'
+            // status: 'Active'
           }));
           
           setDepartments(categoriesArray);
@@ -77,7 +77,7 @@ const Departments = () => {
             <tr>
               <th className="px-6 py-4">Department Name</th>
               <th className="px-6 py-4">Subcategories</th>
-              <th className="px-6 py-4">Status</th>
+              {/* <th className="px-6 py-4">Status</th> */}
               <th className="px-6 py-4">Actions</th>
             </tr>
           </thead>
@@ -105,11 +105,11 @@ const Departments = () => {
                       </ul>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  {/* <td className="px-6 py-4">
                     <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
                       {department.status}
                     </span>
-                  </td>
+                  </td> */}
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button 

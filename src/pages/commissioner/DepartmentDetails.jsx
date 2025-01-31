@@ -1,124 +1,113 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUserShield, FaPhone, FaEnvelope } from 'react-icons/fa';
+import { ref, onValue } from 'firebase/database';
+import { realtimeDb } from '../../config/firebase';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const DepartmentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [department, setDepartment] = useState({
-    id: id,
-    name: 'Water Supply',
-    description: 'Manages city water supply and maintenance',
-    status: 'active',
-    adminCount: 3,
-    complaintCount: 150,
-    resolvedCount: 130,
-    admins: [
-      {
-        id: 1,
-        name: 'John Doe',
-        email: 'john@amc.gov.in',
-        phone: '9876543210',
-        status: 'active',
-        lastActive: '2 hours ago'
-      },
-      {
-        id: 2,
-        name: 'Jane Smith',
-        email: 'jane@amc.gov.in',
-        phone: '9876543211',
-        status: 'active',
-        lastActive: '1 hour ago'
-      }
-    ]
-  });
+  const [department, setDepartment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDepartmentDetails = () => {
+      const departmentRef = ref(realtimeDb, `Categories/${id}`);
+      
+      onValue(departmentRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setDepartment({
+            id: id,
+            name: id, // Since the ID is the name in your case
+            subcategories: data.subcategories || []
+          });
+        } else {
+          setError('Department not found');
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching department:', error);
+        setError('Failed to fetch department details');
+        setLoading(false);
+      });
+    };
+
+    fetchDepartmentDetails();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500 p-4">
+        {error}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <button 
-          onClick={() => navigate('/commissioner/dashboard/departments')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+      <div className="mb-6">
+        <button
+          onClick={() => navigate('/commissioner/departments')}
+          className="flex items-center text-gray-600 hover:text-primary mb-4"
         >
-          <FaArrowLeft className="text-primary" />
+          <FaArrowLeft className="mr-2" />
+          Back to Departments
         </button>
-        <h2 className="text-2xl font-bold text-accent">{department.name}</h2>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{department.name}</h1>
       </div>
 
-      {/* Department Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg border hover:border-primary transition-all duration-200">
-          <div className="text-sm text-neutral/70">Total Admins</div>
-          <div className="text-2xl font-bold text-primary mt-1">{department.adminCount}</div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border hover:border-primary transition-all duration-200">
-          <div className="text-sm text-neutral/70">Total Complaints</div>
-          <div className="text-2xl font-bold text-primary mt-1">{department.complaintCount}</div>
-        </div>
-        <div className="bg-white p-6 rounded-lg border hover:border-primary transition-all duration-200">
-          <div className="text-sm text-neutral/70">Resolved Complaints</div>
-          <div className="text-2xl font-bold text-primary mt-1">{department.resolvedCount}</div>
-        </div>
-      </div>
-
-      {/* Department Info */}
-      <div className="bg-white rounded-lg border hover:border-primary transition-all duration-200 p-6">
-        <h3 className="text-lg font-semibold text-accent mb-4">Department Information</h3>
-        <div className="space-y-3">
-          <div>
-            <span className="text-sm text-neutral/70">Description</span>
-            <p className="mt-1">{department.description}</p>
-          </div>
-          <div>
-            <span className="text-sm text-neutral/70">Status</span>
-            <div className="mt-1">
-              <span className="px-3 py-1 bg-success/10 text-success rounded-full text-sm">
-                {department.status}
-              </span>
-            </div>
+      {/* Department Details */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">Subcategories</h2>
+          <div className="grid gap-3">
+            {department.subcategories.map((subcategory, index) => (
+              <div 
+                key={index}
+                className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-primary transition-colors"
+              >
+                <p className="text-gray-700">{subcategory}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Department Admins */}
-      <div className="bg-white rounded-lg border hover:border-primary transition-all duration-200 overflow-hidden">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-accent">Department Admins</h3>
+        {/* Statistics Section */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-blue-600 mb-1">Total Subcategories</h3>
+            <p className="text-2xl font-bold text-blue-700">
+              {department.subcategories.length}
+            </p>
+          </div>
+          {/* Add more statistics cards as needed */}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-          {department.admins.map((admin) => (
-            <div key={admin.id} className="bg-gray-50 rounded-lg p-4 hover:border transition-shadow duration-200">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                    <FaUserShield className="text-primary text-xl" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">{admin.name}</h4>
-                    <div className="flex items-center space-x-2 text-sm text-neutral/70 mt-1">
-                      <span className="px-2 py-0.5 bg-success/10 text-success rounded-full text-xs">
-                        {admin.status}
-                      </span>
-                      <span>•</span>
-                      <span>{admin.lastActive}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center space-x-2 text-sm">
-                  <FaEnvelope className="text-neutral/50" />
-                  <span>{admin.email}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <FaPhone className="text-neutral/50" />
-                  <span>{admin.phone}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+
+        {/* Actions Section */}
+        <div className="mt-8 flex gap-4">
+          <button
+            onClick={() => {/* Add edit handler */}}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Edit Department
+          </button>
+          <button
+            onClick={() => {/* Add delete handler */}}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Delete Department
+          </button>
         </div>
       </div>
     </div>

@@ -94,10 +94,10 @@ const DeptAdminLayout = () => {
       <div className="flex relative">
         {/* Sidebar */}
         <aside 
-          className={`
-            fixed md:static 
+          className={` 
+            fixed 
             ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'} 
-            bg-white h-[calc(100vh-4rem)] shadow-lg 
+            bg-white h-full shadow-lg 
             transition-all duration-300 ease-in-out z-30
           `}
         >
@@ -135,12 +135,12 @@ const DeptAdminLayout = () => {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className={`
+        {/* Main Content - Adjusted padding and margin */}
+        <main className={` 
           flex-1 
           min-h-[calc(100vh-4rem)] 
           transition-all duration-300 
-          ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}
+          ${sidebarOpen ? 'ml-64' : 'ml-0'}
           relative
           bg-base-100
         `}>
@@ -162,4 +162,4 @@ const DeptAdminLayout = () => {
   );
 };
 
-export default DeptAdminLayout; 
+export default DeptAdminLayout;

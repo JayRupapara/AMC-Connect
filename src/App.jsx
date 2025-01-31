@@ -19,6 +19,7 @@ import CommissionerLayout from './pages/commissioner/CommissionerLayout'
 import { AuthProvider } from './context/AuthContext'
 import { signOut } from 'firebase/auth'
 import { auth } from './config/firebase'
+import Alerts from './pages/commissioner/Alerts'
 
 const App = () => {
   // useEffect(() => {
@@ -68,6 +69,7 @@ const App = () => {
               <Route path="departments" element={<Departments />} />
               <Route path="departments/:id" element={<DepartmentDetails />} />
               <Route path="admins" element={<DepartmentAdmins />} />
+              <Route path="alerts" element={<Alerts />} />
             </Route>
 
             {/* Department Admin Routes */}

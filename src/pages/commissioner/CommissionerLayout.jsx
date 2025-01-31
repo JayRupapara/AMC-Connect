@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { FaUsers, FaBuilding, FaBars, FaTimes, FaChartBar } from 'react-icons/fa';
+import { FaUsers, FaBuilding, FaBars, FaTimes, FaChartBar, FaBell } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const CommissionerLayout = () => {
@@ -74,14 +74,14 @@ const CommissionerLayout = () => {
             <div className="flex relative">
                 {/* Sidebar */}
                 <aside
-                    className={`
-                        fixed md:static 
+                    className={` 
+                        fixed 
                         ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'} 
-                        bg-white h-[calc(100vh-4rem)] shadow-lg 
-                        transition-all duration-300 ease-in-out z-30
+                        bg-white h-full shadow-lg 
+                        transition-all duration-300 ease-in-out z-30 
                     `}
                 >
-                    <div className="p-4 space-y-2">
+                    <aside className="p-4 space-y-2">
                         <NavLink
                             to="/commissioner/dashboard"
                             end
@@ -112,15 +112,25 @@ const CommissionerLayout = () => {
                                 !sidebarOpen && 'md:hidden'
                             }`}>Department Admins</span>
                         </NavLink>
-                    </div>
+
+                        <NavLink
+                            to="/commissioner/alerts"
+                            className={navLinkClasses}
+                        >
+                            <FaBell className="text-xl" />
+                            <span className={`transition-opacity duration-200 ${
+                                !sidebarOpen && 'md:hidden'
+                            }`}>Alerts</span>
+                        </NavLink>
+                    </aside>
                 </aside>
 
                 {/* Main Content - Adjusted padding and margin */}
-                <main className={`
+                <main className={` 
                     flex-1 
                     min-h-[calc(100vh-4rem)] 
                     transition-all duration-300 
-                    ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}
+                    ${sidebarOpen ? 'ml-64' : 'ml-0'}
                     relative
                     bg-base-100
                 `}>
