@@ -12,6 +12,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
             });
           } else {
             // Check Department Admins
-            const deptAdminRef = ref(realtimeDb, `Admins/DepartmentAdmin/${firebaseUser.uid}`);
+            const deptAdminRef = ref(realtimeDb, `Admins/SubAdmins/${firebaseUser.uid}`);
             const deptAdminSnapshot = await get(deptAdminRef);
 
             if (deptAdminSnapshot.exists()) {
@@ -69,11 +70,12 @@ export const AuthProvider = ({ children }) => {
       const superAdminSnapshot = await get(superAdminRef);
 
       if (superAdminSnapshot.exists()) {
+        setPassword(password);
         return 'commissioner';
       }
 
       // Check Department Admin
-      const deptAdminRef = ref(realtimeDb, `Admins/DepartmentAdmin/${userCredential.user.uid}`);
+      const deptAdminRef = ref(realtimeDb, `Admins/SubAdmins/${userCredential.user.uid}`);
       const deptAdminSnapshot = await get(deptAdminRef);
 
       if (deptAdminSnapshot.exists()) {
@@ -92,6 +94,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      setPassword('');
       await signOut(auth);
       setUser(null);
     } catch (error) {
@@ -107,7 +110,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout , password }}>
       {children}
     </AuthContext.Provider>
   );

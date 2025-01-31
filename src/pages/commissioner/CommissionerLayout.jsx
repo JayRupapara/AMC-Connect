@@ -94,7 +94,7 @@ const CommissionerLayout = () => {
                         </NavLink>
 
                         <NavLink
-                            to="/commissioner/dashboard/departments"
+                            to="/commissioner/departments"
                             className={navLinkClasses}
                         >
                             <FaBuilding className="text-xl" />
@@ -104,7 +104,7 @@ const CommissionerLayout = () => {
                         </NavLink>
 
                         <NavLink
-                            to="/commissioner/dashboard/admins"
+                            to="/commissioner/admins"
                             className={navLinkClasses}
                         >
                             <FaUsers className="text-xl" />

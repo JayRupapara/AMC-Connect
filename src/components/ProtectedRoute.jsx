@@ -19,7 +19,7 @@ export const ProtectedRoute = ({ allowedRoles, children }) => {
     // Redirect to appropriate dashboard based on role
     const dashboardPath = user.role === 'deptAdmin' 
       ? '/department-admin/dashboard'
-      : '/commissioner/dashboard/departments';
+      : '/commissioner/departments';
     
     return <Navigate to={dashboardPath} replace />;
   }
@@ -35,7 +35,7 @@ export const PublicRoute = ({ children }) => {
     // Redirect based on user role
     const dashboardPath = user.role === 'deptAdmin' 
       ? '/department-admin/dashboard'
-      : '/commissioner/dashboard/departments';
+      : '/commissioner/departments';
     
     return <Navigate to={dashboardPath} replace />;
   }

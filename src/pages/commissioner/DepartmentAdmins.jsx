@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
-import { ref, push, get, set, remove } from 'firebase/database';
-import { 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import { ref, push, get, set, remove, onValue, off } from 'firebase/database';
+import {
+  createUserWithEmailAndPassword,
+  signOut,
   setPersistence,
-  browserSessionPersistence 
+  browserSessionPersistence
 } from 'firebase/auth';
 import { auth, realtimeDb } from '../../config/firebase';
 import { FaPlus, FaTrash, FaEdit } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const DepartmentAdmins = () => {
-  const { user: currentUser } = useAuth();
+  const { user, login, password } = useAuth();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,16 +23,18 @@ const DepartmentAdmins = () => {
     department: '',
     phone: ''
   });
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     fetchAdmins();
+    fetchCategories();
   }, []);
 
   const fetchAdmins = async () => {
     try {
       const adminsRef = ref(realtimeDb, 'Admins/SubAdmins');
       const snapshot = await get(adminsRef);
-      
+
       if (snapshot.exists()) {
         const adminsData = [];
         snapshot.forEach((childSnapshot) => {
@@ -49,6 +51,19 @@ const DepartmentAdmins = () => {
       setError('Failed to load department admins');
       setLoading(false);
     }
+  };
+
+  const fetchCategories = () => {
+    const categoriesRef = ref(realtimeDb, 'Categories');
+    onValue(categoriesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const categoriesData = Object.keys(snapshot.val()).map(name => ({
+          id: name,
+          name: name
+        }));
+        setCategories(categoriesData);
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -74,7 +89,20 @@ const DepartmentAdmins = () => {
         createdAt: new Date().toISOString()
       });
 
+      // Sign out the newly created admin
       await signOut(auth);
+
+      // Set persistence and re-login commissioner
+      await setPersistence(auth, browserSessionPersistence);
+      const role = await login(user?.email, password);
+
+      if (role !== 'commissioner') {
+        throw new Error('Unauthorized access');
+      }
+
+      // Redirect to department admin dashboard
+      const from = location.state?.from?.pathname || "/commissioner/admins";
+      navigate(from, { replace: true });
 
       // Clear form and close modal
       setFormData({
@@ -85,7 +113,7 @@ const DepartmentAdmins = () => {
         phone: ''
       });
       setIsModalOpen(false);
-      
+
       // Refresh admins list
       await fetchAdmins();
 
@@ -136,7 +164,7 @@ const DepartmentAdmins = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg border overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -188,79 +216,137 @@ const DepartmentAdmins = () => {
 
       {/* Add Admin Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-accent mb-4">Add Department Admin</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Add Department Admin</h2>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Name Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                  placeholder="Enter admin's full name"
                   required
                 />
               </div>
+
+              {/* Email Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                  placeholder="Enter admin's email"
                   required
                 />
               </div>
+
+              {/* Password Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                  placeholder="Enter secure password"
                   required
                 />
               </div>
+
+              {/* Phone Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Department</label>
-                <select
-                  value={formData.department}
-                  onChange={(e) => setFormData({...formData, department: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                  required
-                >
-                  <option value="">Select Department</option>
-                  <option value="Water Supply">Water Supply</option>
-                  <option value="Road">Road</option>
-                  <option value="Drainage">Drainage</option>
-                  <option value="Garbage">Garbage</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                  placeholder="Enter phone number"
                   required
                 />
               </div>
-              <div className="flex justify-end space-x-3 mt-6">
+
+              {/* Department Dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors appearance-none bg-white"
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="text-red-500 text-sm py-2">
+                  {error}
+                </div>
+              )}
+
+              {/* Form Buttons */}
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-focus disabled:opacity-50"
+                  className="px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
                 >
-                  {loading ? 'Adding...' : 'Add Admin'}
+                  {loading ? (
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    'Add Admin'
+                  )}
                 </button>
               </div>
             </form>

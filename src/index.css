@@ -9,4 +9,24 @@
     font-family: 'Poppins', sans-serif;
     @apply text-neutral;
   }
+    @keyframes leftMove {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(0); }
+    }
+  
+    @keyframes rightMove {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+      100% { transform: translateY(0); }
+    }
+  
+    .animate-left {
+      animation: leftMove 2s infinite ease-in-out;
+    }
+  
+    .animate-right {
+      animation: rightMove 2s infinite ease-in-out;
+    }
+  
 }

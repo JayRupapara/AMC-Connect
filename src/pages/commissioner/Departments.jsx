@@ -1,13 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { realtimeDb } from '../../config/firebase';
+import { get, ref, onValue } from 'firebase/database';
 
 const Departments = () => {
   const navigate = useNavigate();
-  const [departments, setDepartments] = useState([
-    { id: 1, name: 'Water Supply', description: 'Manages city water supply', status: 'active' },
-    { id: 2, name: 'Solid Waste', description: 'Handles waste management', status: 'active' },
-  ]);
+  const [departments, setDepartments] = useState();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDepartments = async () => {
+    try {
+      const categoriesRef = ref(realtimeDb, 'Categories');
+      
+      onValue(categoriesRef, (snapshot) => {
+        if (snapshot.exists()) {
+          // Convert the snapshot to an array of categories
+          const categoriesArray = Object.entries(snapshot.val()).map(([name, data]) => ({
+            id: name, // Using the category name as ID
+            name: name,
+            description: `${data.subcategories.length} subcategories`,
+            subcategories: data.subcategories,
+            status: 'Active'
+          }));
+          
+          setDepartments(categoriesArray);
+        } else {
+          setDepartments([]);
+        }
+        setLoading(false);
+      });
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setError('Failed to fetch categories');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log('Fetching departments...');
+    fetchDepartments();
+  }, []);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
@@ -18,7 +53,7 @@ const Departments = () => {
   };
 
   const handleDepartmentClick = (deptId) => {
-    navigate(`/commissioner/dashboard/departments/${deptId}`);
+    navigate(`/commissioner/departments/${deptId}`);
   };
 
   return (
@@ -40,55 +75,70 @@ const Departments = () => {
         <table className="w-full min-w-[600px]">
           <thead className="bg-accent text-left text-sm font-semibold border-b text-base-100 border-gray-100">
             <tr>
-              <th className="px-6 py-4 ">Name</th>
-
-              <th className="px-6 py-4">Description</th>
+              <th className="px-6 py-4">Department Name</th>
+              <th className="px-6 py-4">Subcategories</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {departments.map((dept) => (
-              <tr 
-                key={dept.id} 
-                className="hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                onClick={() => handleDepartmentClick(dept.id)}
-              >
-                <td className="px-6 py-4">
-                  <div className="font-medium text-accent">{dept.name}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-neutral/70 line-clamp-2">{dept.description}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="px-3 py-1 bg-success/10 text-success rounded-full text-sm">
-                    {dept.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex space-x-3">
-                    <button 
-                      className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors duration-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Add edit logic
-                      }}
-                    >
-                      <FaEdit />
-                    </button>
-                    <button 
-                      className="p-2 text-error hover:bg-error/10 rounded-full transition-colors duration-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Add delete logic
-                      }}
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
+            {loading ? (
+              <tr>
+                <td colSpan="4" className="px-6 py-4 text-center">Loading...</td>
               </tr>
-            ))}
+            ) : departments && departments.length > 0 ? (
+              departments.map((department) => (
+                <tr 
+                  key={department.id} 
+                  onClick={() => handleDepartmentClick(department.id)}
+                  className="hover:bg-gray-50 cursor-pointer"
+                >
+                  <td className="px-6 py-4">{department.name}</td>
+                  <td className="px-6 py-4">
+                    <div className="max-h-20 overflow-y-auto">
+                      <ul className="list-disc list-inside">
+                        {department.subcategories.map((sub, index) => (
+                          <li key={index} className="text-sm text-gray-600">
+                            {sub}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                      {department.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      <button 
+                        className="text-blue-500 hover:text-blue-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add edit handler
+                        }}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button 
+                        className="text-red-500 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add delete handler
+                        }}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="px-6 py-4 text-center">No departments found</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

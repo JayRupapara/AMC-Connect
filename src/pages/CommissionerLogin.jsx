@@ -30,12 +30,13 @@ const CommissionerLogin = () => {
         try {
             const role = await login(formData.email, formData.password);
             console.log(role);
-            if (role === 'commissioner') {
-                navigate('/commissioner/dashboard');
+            if (role !== 'commissioner') {
+                throw new Error('Unauthorized access');
             }
-            else {
-                setError('Invalid credentials or unauthorized access.');
-            }
+
+            // Redirect to department admin dashboard
+            const from = location.state?.from?.pathname || "/commissioner/dashboard";
+            navigate(from, { replace: true });
 
         } catch (err) {
             console.error('Login error:', err);

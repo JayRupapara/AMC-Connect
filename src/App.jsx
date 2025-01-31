@@ -57,14 +57,14 @@ const App = () => {
 
             {/* Protected dashboard routes without Navbar */}
             <Route
-              path="/commissioner/dashboard"
+              path="/commissioner"
               element={
                 <ProtectedRoute allowedRoles={['commissioner']}>
                   <CommissionerLayout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="departments" element={<Departments />} />
               <Route path="departments/:id" element={<DepartmentDetails />} />
               <Route path="admins" element={<DepartmentAdmins />} />
