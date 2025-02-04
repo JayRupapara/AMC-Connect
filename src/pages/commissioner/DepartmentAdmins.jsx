@@ -23,6 +23,7 @@ const DepartmentAdmins = () => {
     department: '',
     phone: ''
   });
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
@@ -72,59 +73,74 @@ const DepartmentAdmins = () => {
     setError(null);
 
     try {
-      // Create new department admin
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+      if (selectedAdmin) {
+        // Update existing admin
+        const adminRef = ref(realtimeDb, `Admins/SubAdmins/${selectedAdmin.id}`);
+        await set(adminRef, {
+          name: formData.name,
+          email: formData.email,
+          department: formData.department,
+          phone: formData.phone,
+        });
+      } else {
+        // Create new department admin
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
 
-      // Add user data to realtime database
-      const adminRef = ref(realtimeDb, `Admins/SubAdmins/${userCredential.user.uid}`);
-      await set(adminRef, {
-        name: formData.name,
-        email: formData.email,
-        department: formData.department,
-        phone: formData.phone,
-        createdAt: new Date().toISOString()
-      });
+        // Add user data to realtime database
+        const adminRef = ref(realtimeDb, `Admins/SubAdmins/${userCredential.user.uid}`);
+        await set(adminRef, {
+          name: formData.name,
+          email: formData.email,
+          department: formData.department,
+          phone: formData.phone,
+          password: formData.password,
+          createdAt: new Date().toISOString()
+        });
 
-      // Sign out the newly created admin
-      await signOut(auth);
+        // Sign out the newly created admin
+        await signOut(auth);
 
-      // Set persistence and re-login commissioner
-      await setPersistence(auth, browserSessionPersistence);
-      const role = await login(user?.email, password);
+        // Set persistence and re-login commissioner
+        await setPersistence(auth, browserSessionPersistence);
+        const role = await login(user?.email, password);
 
-      if (role !== 'commissioner') {
-        throw new Error('Unauthorized access');
+        if (role !== 'commissioner') {
+          throw new Error('Unauthorized access');
+        }
+
+        // Redirect to department admin dashboard
+        const from = location.state?.from?.pathname || "/commissioner/admins";
+        navigate(from, { replace: true });
       }
 
-      // Redirect to department admin dashboard
-      const from = location.state?.from?.pathname || "/commissioner/admins";
-      navigate(from, { replace: true });
-
       // Clear form and close modal
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        department: '',
-        phone: ''
-      });
-      setIsModalOpen(false);
-
-      // Refresh admins list
+      resetForm();
       await fetchAdmins();
 
       // Show success message
-      alert('Department Admin added successfully!');
+      alert('Department Admin added/updated successfully!');
     } catch (err) {
-      console.error('Error adding admin:', err);
-      setError(err.message || 'Failed to add department admin');
+      console.error('Error adding/updating admin:', err);
+      setError(err.message || 'Failed to add/update department admin');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (admin) => {
+    setSelectedAdmin(admin);
+    setFormData({
+      name: admin.name,
+      email: admin.email,
+      department: admin.department,
+      phone: admin.phone,
+      password: ''
+    });
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (adminId) => {
@@ -139,6 +155,18 @@ const DepartmentAdmins = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      department: '',
+      phone: ''
+    });
+    setSelectedAdmin(null);
+    setIsModalOpen(false);
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-64">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -150,7 +178,10 @@ const DepartmentAdmins = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-accent">Department Admins</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            resetForm();
+            setIsModalOpen(true);
+          }}
           className="bg-primary text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary-focus transition-colors"
         >
           <FaPlus />
@@ -202,6 +233,12 @@ const DepartmentAdmins = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
+                    onClick={() => handleEdit(admin)}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
                     onClick={() => handleDelete(admin.id)}
                     className="text-error hover:text-error-focus transition-colors"
                   >
@@ -214,14 +251,14 @@ const DepartmentAdmins = () => {
         </table>
       </div>
 
-      {/* Add Admin Modal */}
+      {/* Add/Edit Admin Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Add Department Admin</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{selectedAdmin ? 'Edit Department Admin' : 'Add Department Admin'}</h2>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={resetForm}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,20 +298,22 @@ const DepartmentAdmins = () => {
                 />
               </div>
 
-              {/* Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                  placeholder="Enter secure password"
-                  required
-                />
-              </div>
+              {/* Password Field (only for new admins) */}
+              {!selectedAdmin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                    placeholder="Enter secure password"
+                    required
+                  />
+                </div>
+              )}
 
               {/* Phone Field */}
               <div>
@@ -329,7 +368,7 @@ const DepartmentAdmins = () => {
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={resetForm}
                   className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
@@ -340,12 +379,9 @@ const DepartmentAdmins = () => {
                   className="px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
                 >
                   {loading ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <span>Loading...</span>
                   ) : (
-                    'Add Admin'
+                    selectedAdmin ? 'Save Changes' : 'Add Admin'
                   )}
                 </button>
               </div>

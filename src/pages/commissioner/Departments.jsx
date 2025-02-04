@@ -188,7 +188,7 @@ const Departments = () => {
                   className="px-4 py-2 bg-primary text-base-100 rounded-lg hover:bg-secondary"
                 >
                   Add Department
-                </button>
+                  </button>
               </div>
             </form>
           </div>
